@@ -6,7 +6,34 @@ const router = express.Router();
 const isProduction = process.env.NODE_ENV === 'production';
 const clientUrl = isProduction ? process.env.CLIENT_URL_PROD : process.env.CLIENT_URL_DEV;
 
-// Social
+// Azure Active Directory
+router.get(
+  "/azure",
+  passport.authenticate("azuread-openidconnect", {
+    session: false,
+  })
+);
+
+router.get(
+  "/azure/callback",
+  passport.authenticate("azuread-openidconnect", {
+    failureRedirect: `${clientUrl}/login`,
+    failureMessage: true,
+    session: false,
+    scope: ["openid", "profile", "email"]
+  }),
+  (req, res) => {
+    const token = req.user.generateToken();
+    res.cookie("token", token, {
+      expires: new Date(Date.now() + eval(process.env.SESSION_EXPIRY)),
+      httpOnly: false,
+      secure: isProduction
+    });
+    res.redirect(clientUrl);
+  }
+);
+
+// Social Google
 router.get(
   '/google',
   passport.authenticate('google', {
@@ -34,6 +61,7 @@ router.get(
   }
 );
 
+// Social Facebook
 router.get(
   '/facebook',
   passport.authenticate('facebook', {

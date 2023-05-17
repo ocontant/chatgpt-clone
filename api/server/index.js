@@ -30,6 +30,9 @@ const projectPath = path.join(__dirname, '..', '..', 'client');
   app.use(passport.initialize());
   require('../strategies/jwtStrategy');
   require('../strategies/localStrategy');
+  if(process.env.AZURE_TENANT_ID && process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET) {
+    require('../strategies/azureStrategy');
+  }
   if(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     require('../strategies/googleStrategy');
   }
