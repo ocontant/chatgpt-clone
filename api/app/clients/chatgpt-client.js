@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { KeyvFile } = require('keyv-file');
-// const set = new Set(['gpt-4', 'text-davinci-003', 'gpt-3.5-turbo', 'gpt-3.5-turbo-0301']);
+const { genAzureEndpoint } = require('../../utils/genAzureEndpoints');
 
 const askClient = async ({
   text,
@@ -17,38 +17,50 @@ const askClient = async ({
   abortController,
   userId
 }) => {
-  const ChatGPTClient = (await import('@waylaidwanderer/chatgpt-api')).default;
+  const { ChatGPTClient } = await import('@waylaidwanderer/chatgpt-api');
   const store = {
     store: new KeyvFile({ filename: './data/cache.json' })
   };
 
+  const azure = process.env.AZURE_OPENAI_API_KEY ? true : false;
+  const maxContextTokens = model === 'gpt-4' ? 8191 : model === 'gpt-4-32k' ? 32767 : 4095; // 1 less than maximum
   const clientOptions = {
-    // Warning: This will expose your access token to a third party. Consider the risks before using this.
     reverseProxyUrl: process.env.OPENAI_REVERSE_PROXY || null,
-
+    azure,
+    maxContextTokens,
     modelOptions: {
-      model: model,
+      model,
       temperature,
       top_p,
       presence_penalty,
       frequency_penalty
     },
-
     chatGptLabel,
     promptPrefix,
     proxy: process.env.PROXY || null,
-    debug: false,
-    user: userId
+    // debug: true
   };
 
-  const client = new ChatGPTClient(process.env.OPENAI_KEY, clientOptions, store);
-  let options = { onProgress, abortController };
+  let apiKey = process.env.OPENAI_KEY;
 
-  if (!!parentMessageId && !!conversationId) {
-    options = { ...options, parentMessageId, conversationId };
+  if (azure) {
+    apiKey = process.env.AZURE_OPENAI_API_KEY;
+    clientOptions.reverseProxyUrl = genAzureEndpoint({
+      azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_INSTANCE_NAME,
+      azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+      azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION
+    });
   }
 
-  const res = await client.sendMessage(text, options);
+  const client = new ChatGPTClient(apiKey, clientOptions, store);
+
+  const options = {
+    onProgress,
+    abortController,
+    ...(parentMessageId && conversationId ? { parentMessageId, conversationId } : {})
+  };
+
+  const res = await client.sendMessage(text, { ...options, userId });
   return res;
 };
 
