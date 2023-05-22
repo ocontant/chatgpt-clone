@@ -1,0 +1,61 @@
+
+# This is the overall configuration for the logging system
+output_mode:
+  console: true
+
+  # Configuration for Fluentd logging
+  fluentd: 
+    enabled: false
+    # The tag for Fluentd logs
+    tag: myapp
+    # The server where Fluentd is running
+    server: fluentd-host
+
+  # Configuration for Syslog logging
+  syslog:
+    enabled: false
+    # The address where Syslog server is running
+    address: syslog-host
+    # The port on which Syslog is listening
+    port: 514
+  
+  # Configuration for AWS Lambda logging
+  lambda:
+    enabled: false
+  
+  # Configuration for MongoDB logging
+  mongodb:
+    enabled: false
+    # The MongoDB connection URL where logs will be stored
+    mongoURL: mongodb://localhost:27017/logs
+
+
+# redactedPaths: An array of paths that will be redacted in the logs.
+# Each path is a string that represents the path to the sensitive information in the logged objects.
+# Pino will replace any data found at these paths with the redaction censor ('***' in this case).
+redactedPaths:
+  - env.OPENAI_KEY
+  - env.BINGAI_TOKEN
+  - env.CHATGPT_TOKEN
+  - env.MEILI_MASTER_KEY
+  - env.GOOGLE_CLIENT_SECRET
+  - env.JWT_SECRET_DEV
+  - env.JWT_SECRET_PROD
+  - newUser.password
+
+# redactPatterns: An array of regular expressions used to identify sensitive variable names.
+# Each pattern is a string representation of a regular expression.
+# If a logged variable's name matches any of these patterns, its value will be redacted.
+redactPatterns:
+  - "api[-_]?key"
+  - "password"
+  - "token"
+  - "secret"
+  - "key"
+  - "certificate"
+  - "client[-_]?id"
+  - "authorization[-_]?code"
+  - "authorization[-_]?login[-_]?hint"
+  - "authorization[-_]?acr[-_]?values"
+  - "authorization[-_]?response[-_]?mode"
+  - "authorization[-_]?nonce"
